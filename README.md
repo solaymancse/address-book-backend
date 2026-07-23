@@ -1,58 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Address Book — Laravel Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is fully Dockerized. No need to install PHP, Composer, MySQL, or Laravel Herd/Laragon/Xampp on your machine — everything runs inside containers.
 
-## About Laravel
+## Prerequisites
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Make sure you have the following installed on your machine:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
+- [Git](https://git-scm.com/downloads)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+That's it — no PHP, Composer, or MySQL needed locally.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Step 1: Clone the Repository
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone <your-repo-url>
+cd address-book/backend
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## Step 2: Create the `.env` File
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Copy the example environment file:
 
-## Code of Conduct
+```bash
+cp .env.example .env
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Open `.env` and make sure the database settings look like this (these values must match `docker-compose.yml`):
 
-## Security Vulnerabilities
+```env
+APP_URL=http://localhost:8001
+APP_PORT=8001
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=database_name
+DB_USERNAME=user_name
+DB_PASSWORD=yourPassword
+```
 
-## License
+> **Important:** `DB_HOST` must be `mysql` (the Docker service name), **not** `127.0.0.1` or `localhost`. Since MySQL runs in its own container, Laravel reaches it over the internal Docker network using the service name.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## Step 3: Build and Start the Containers
+
+From the `backend` folder (where `docker-compose.yml` is located), run:
+
+```bash
+docker compose up -d --build
+```
+
+This will:
+
+1. Build the Laravel app image (`backend` service) from the `Dockerfile`
+2. Pull and start the `mysql:8.0` image
+3. Create a Docker network so both containers can talk to each other
+4. Create a persistent volume for MySQL data (`mysql_data`)
+
+Check that both containers are running:
+
+```bash
+docker compose ps
+```
+
+You should see `address_backend` and `address_mysql` both in an `Up`/`healthy` state.
+
+---
+
+## Step 4: Generate the App Key
+
+If `APP_KEY` in your `.env` is empty, generate one:
+
+```bash
+docker compose exec backend php artisan key:generate
+```
+
+---
+
+## Step 5: Run Migrations
+
+Once MySQL is healthy, run the database migrations inside the backend container:
+
+```bash
+docker compose exec backend php artisan migrate
+```
+
+If you also have seeders:
+
+```bash
+docker compose exec backend php artisan migrate --seed
+```
+
+---
+
+## Step 6: Test the API
+
+The app is now available at:
+
+```
+http://localhost:8001
+```
+
+Try hitting an endpoint in Postman or your browser, e.g.:
+
+```
+POST http://localhost:8001/api/v1/register
+```
+
+---
+
+## Common Commands
+
+| Action | Command |
+|---|---|
+| Start containers (detached) | `docker compose up -d` |
+| Stop containers | `docker compose down` |
+| Stop and remove volumes (⚠️ wipes DB data) | `docker compose down -v` |
+| Rebuild after Dockerfile/composer.json changes | `docker compose build --no-cache` |
+| View backend logs | `docker compose logs -f backend` |
+| View MySQL logs | `docker compose logs -f mysql` |
+| Open a shell inside the backend container | `docker compose exec backend bash` |
+| Run any artisan command | `docker compose exec backend php artisan <command>` |
+| Run composer command | `docker compose exec backend composer <command>` |
+| Clear config/route/view cache | `docker compose exec backend php artisan optimize:clear` |
+
+---
+
+## Troubleshooting
+
+**Getting `Connection refused` on MySQL (Host: 127.0.0.1)?**
+This means Laravel is using a stale cached config. Fix it with:
+
+```bash
+docker compose exec backend php artisan config:clear
+```
+
+Then rebuild if the issue persists:
+
+```bash
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+**Port already in use?**
+Change `APP_PORT` or `DB_PORT` in `.env` to a free port, then restart:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+**MySQL container keeps restarting?**
+Check logs:
+
+```bash
+docker compose logs mysql
+```
+
+Usually caused by a mismatched `MYSQL_ROOT_PASSWORD` after the volume was already initialized with a different password. Reset with:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+⚠️ This deletes existing database data — only use in local/dev environments.
+
+---
+
+## Fresh Install (One-Shot Setup)
+
+For a first-time setup, you can run all steps in sequence:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose exec backend php artisan key:generate
+docker compose exec backend php artisan migrate --seed
+```
+
+Then open `http://localhost:8001` — the API is ready to use.
