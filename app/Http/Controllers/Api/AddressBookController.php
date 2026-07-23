@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 
 class AddressBookController extends Controller
 {
-
     public function __construct(protected AddressBookService $service) {}
 
     public function index(Request $request): JsonResponse
@@ -21,7 +20,7 @@ class AddressBookController extends Controller
 
     public function store(AddressBookRequest $request): JsonResponse
     {
-        $record = $this->service->createRecord($request->validated(), $request->user()->id);
+        $record = $this->service->createRecord($request->validated());
         return successResponse($record, 'Address book record created successfully', 201);
     }
 
@@ -55,4 +54,5 @@ class AddressBookController extends Controller
         $this->service->deleteRecord($record);
         return successResponse(null, 'Address book record deleted successfully');
     }
+
 }

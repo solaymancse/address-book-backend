@@ -19,6 +19,11 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    public function show(): JsonResponse
+    {
+        return successResponse(auth()->user(), 'Authenticated user retrieved successfully');
+    }
+
     public function register(RegisterRequest $request): JsonResponse
     {
         $result = $this->authService->register($request->validated());

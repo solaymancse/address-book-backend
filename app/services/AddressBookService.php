@@ -25,10 +25,9 @@ class AddressBookService
         return $this->repository->findById($id);
     }
 
-    public function createRecord(array $data, int $userId): AddressBook
+    public function createRecord(array $data): AddressBook
     {
-        // Enforce that created_by is derived securely from the authenticated user token
-        $data['created_by'] = $userId;
+        $data['created_by'] = auth()->id();
         return $this->repository->create($data);
     }
 

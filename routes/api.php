@@ -12,11 +12,9 @@ Route::post('/v1/login', [AuthController::class, 'login']);
 // Protected Routes (Sanctum Token Authentication)
 Route::middleware('auth:sanctum')->group(function () {
     // Authenticated User Profile
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/v1/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Address Book RESTful CRUD Routes (Protected + Controller -> Service -> Repository pattern)
+    Route::get('/v1/stats', [AddressBookController::class, 'stats']);
     Route::apiResource('/v1/address-book', AddressBookController::class);
 });
